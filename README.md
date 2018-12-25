@@ -607,3 +607,79 @@ cloneUserInstance.readObject( serializedObject );
 console.log( sourceInstance, cloneUserInstance )	
 ```	
 
+序列化
+继承自Serializable类的writeObject方法允许我们将对象序列化为另一个“可传输”对象。
+var serializedObject:any = sourceInstance.writeObject();
+在控制台中跟踪对象，将获得类似于以下内容：
+{
+    "@serializable": "User",
+    "name": "John",
+    "surname": "Smith",
+    "street": "Some Street Address",
+    "number": 67
+}
+我们还可以使用strgify()方法，它会返回一个可用于传输的JSON串。
+
+反序列化
+要重新构建序列化的对象，我们可以使用User类继承的“readObject”或“parse”方法。
+//创建一个新的User实例（源）
+var sourceInstance:User = new User();
+sourceInstance.name = "John";
+sourceInstance.surname = "Smith";
+sourceInstance.street = "Some Street Address";
+sourceInstance.number = 67;
+
+//序列化实例
+var serializedObject:any = sourceInstance.writeObject();
+
+//创建一个新的User实例
+var serializedObjectClone:any = new User();
+
+//从我们已经创建的序列化对象中重新构建
+serializedObjectClone.readObject( serializedObject );
+我们还可以使用parse(json：string)方法从JSON字符串重新构建对象。
+
+属性的自定义序列化
+除了指定要序列化的属性之外，我们还可以指定如何序列化这些属性。
+例如，我们将为我们的User类添加一个“Date”属性。稍后，希望将其序列化为YYYY/MM/DD格式。
+class User
+{
+	...
+	date:Date;
+    ...
+}
+要定义如何处理这个“Date”属性，我们将在UserSeriizer类中创建两个新方法。
+这些方法必须以下列格式命名：
+set_propertyName( property:PropertyType ):string
+get_propertyName( property:string ):Type
+将其应用于我们的User类会是：
+class User extends Serializable
+{
+	name:string;
+	surname:string;
+	street:string;
+	number:number;
+	date:Date;
+}
+
+class UserSerializer implements ISerializerHelper
+{
+	"@serializer":string = null;
+    date:Date = null;
+    set_date(date:Date):string
+    {
+        return [ date.getFullYear(), date.getMonth()+1, date.getDate()].join('/');
+    }
+	get_date(dateString:string):Date
+	{
+		var dateParts:string[] = dateString.split('/');
+		var date = new Date();
+		date.setFullYear( parseInt(dateParts[0],10));
+		date.setMonth( parseInt(dateParts[1],10)-1);
+		date.setDate( parseInt(dateParts[2],10));
+		return date;
+	}
+}
+
+Demo
+下面是完整的代码示例。你可以通过点击下方的TSPlay按钮，在Typescript Playground上运行它。
